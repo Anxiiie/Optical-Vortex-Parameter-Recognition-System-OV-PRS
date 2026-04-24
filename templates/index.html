@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Распознаватель оптических вихрей Лагерра-Гаусса</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #c8a2c8 0%, #e6b3e6 50%, #d8b4d8 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .header-panel {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 20px 40px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-panel h1 {
+            color: #6b4c6b;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .main-container {
+            display: flex;
+            gap: 30px;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .left-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .frame-container {
+            background: rgba(255, 255, 255, 0.8);
+            border: 3px solid #8b6b8b;
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .image-frame {
+            width: 300px;
+            height: 300px;
+            background: #f0f0f0;
+            border: 2px solid #a080a0;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        .image-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .image-frame video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .image-placeholder {
+            color: #888;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .params-frame {
+            min-height: 150px;
+        }
+
+        .param-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #d0c0d0;
+        }
+
+        .param-item:last-child {
+            border-bottom: none;
+        }
+
+        .param-label {
+            font-weight: bold;
+            color: #6b4c6b;
+        }
+
+        .param-value {
+            color: #4a3a4a;
+            font-size: 18px;
+        }
+
+        .controls-frame {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #9b7b9b 0%, #b89bb8 100%);
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #b89bb8 0%, #d0b0d0 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-label {
+            display: inline-block;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #9b7b9b 0%, #b89bb8 100%);
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .file-label:hover {
+            background: linear-gradient(135deg, #b89bb8 0%, #d0b0d0 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .status-message {
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #6b4c6b;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .table-frame {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #d0c0d0;
+        }
+
+        th {
+            background: rgba(155, 123, 155, 0.9);
+            color: #6b4c6b;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        tr:hover {
+            background: rgba(155, 123, 155, 0.1);
+        }
+
+        .language-selector {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .lang-btn {
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-panel">
+        <h1 id="appTitle">OV-PRS</h1>
+        <div class="language-selector">
+            <button class="lang-btn" onclick="setLanguage('en')">🇬🇧 English</button>
+            <button class="lang-btn" onclick="setLanguage('ru')">🇷🇺 Русский</button>
+            <button class="lang-btn" onclick="setLanguage('zh')">🇨🇳 中文</button>
+            <button class="lang-btn" onclick="setLanguage('ja')">🇯🇵 日本語</button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="left-panel">
+            <div class="frame-container">
+                <div class="image-frame" id="imageFrame">
+                    <div class="image-placeholder">Загрузите изображение или подключите камеру</div>
+                </div>
+            </div>
+
+            <div class="frame-container controls-frame">
+                <div class="button-group">
+                    <input type="file" id="modelFile" class="file-input" accept=".pth,.pt">
+                    <label for="modelFile" class="file-label">Загрузить модель</label>
+                    
+                    <button id="cameraBtn" onclick="toggleCamera()">Подключить камеру</button>
+                    
+                    <input type="file" id="imageFile" class="file-input" accept="image/*" onchange="uploadSingleImage()">
+                    <label for="imageFile" class="file-label">Загрузить изображение</label>
+                    
+                    <input type="file" id="multipleFiles" class="file-input" accept="image/*" multiple onchange="uploadMultipleImages()">
+                    <label for="multipleFiles" class="file-label">Пакетная загрузка</label>
+                </div>
+
+                <div class="button-group">
+                    <button id="stopRecognitionBtn" onclick="stopRecognition()" disabled>Остановить распознавание</button>
+                    <button id="showTableBtn" onclick="showResults()">Показать таблицу</button>
+                    <button id="exportBtn" onclick="exportResults()">Экспорт CSV</button>
+                    <button id="clearBtn" onclick="clearResults()">Очистить результаты</button>
+                </div>
+
+                <div class="status-message" id="statusMessage">Загрузите модель для начала работы</div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="frame-container params-frame">
+                <h3 id="paramsTitle" style="color: #6b4c6b; margin-bottom: 15px;">Результаты распознавания</h3>
+                <div class="param-item">
+                    <span class="param-label" id="radialLabel">Радиальный индекс (n):</span>
+                    <span class="param-value" id="nValue">-</span>
+                </div>
+                <div class="param-item">
+                    <span class="param-label" id="azimuthalLabel">Азимутальный индекс (m):</span>
+                    <span class="param-value" id="mValue">-</span>
+                </div>
+                <div class="param-item">
+                    <span class="param-label" id="topologicalLabel">Топологический заряд (TC):</span>
+                    <span class="param-value" id="tcValue">-</span>
+                </div>
+            </div>
+
+            <div class="frame-container table-frame" id="tableContainer" style="display: none;">
+                <h3 id="historyTitle" style="color: #6b4c6b; margin-bottom: 15px;">История распознавания</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th id="tableHeaderImage">Изображение</th>
+                            <th id="tableHeaderN">n</th>
+                            <th id="tableHeaderM">m</th>
+                            <th id="tableHeaderTC">TC</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTable">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cameraRunning = false;
+        let recognitionActive = false;
+        let results = [];
+        let currentLanguage = 'ru';
+
+        // Переводы
+        const translations = {
+            en: {
+                loadModel: 'Load Model',
+                connectCamera: 'Connect Camera',
+                stopCamera: 'Stop Camera',
+                loadImage: 'Load Image',
+                batchLoad: 'Batch Load',
+                stopRecognition: 'Stop Recognition',
+                showTable: 'Show Table',
+                exportCSV: 'Export CSV',
+                clearResults: 'Clear Results',
+                statusLoadModel: 'Load a model to start',
+                statusModelLoaded: 'Model loaded successfully',
+                statusError: 'Error: ',
+                statusCameraStarted: 'Camera started. Recognition active.',
+                statusCameraStopped: 'Camera stopped',
+                statusImageLoaded: 'Image loaded and recognized',
+                statusBatchLoaded: 'Images loaded. Recognition complete.',
+                statusRecognitionStopped: 'Recognition stopped',
+                statusResultsExported: 'Results exported',
+                statusResultsCleared: 'Results cleared',
+                placeholderImage: 'Load an image or connect camera',
+                placeholderCameraStopped: 'Camera stopped',
+                recognitionResults: 'Recognition Results',
+                radialIndex: 'Radial Index (n):',
+                azimuthalIndex: 'Azimuthal Index (m):',
+                topologicalCharge: 'Topological Charge (TC):',
+                recognitionHistory: 'Recognition History',
+                tableImage: 'Image',
+                tableN: 'n',
+                tableM: 'm',
+                tableTC: 'TC'
+            },
+            ru: {
+                loadModel: 'Загрузить модель',
+                connectCamera: 'Подключить камеру',
+                stopCamera: 'Остановить камеру',
+                loadImage: 'Загрузить изображение',
+                batchLoad: 'Пакетная загрузка',
+                stopRecognition: 'Остановить распознавание',
+                showTable: 'Показать таблицу',
+                exportCSV: 'Экспорт CSV',
+                clearResults: 'Очистить результаты',
+                statusLoadModel: 'Загрузите модель для начала работы',
+                statusModelLoaded: 'Модель успешно загружена',
+                statusError: 'Ошибка: ',
+                statusCameraStarted: 'Камера запущена. Распознавание активно.',
+                statusCameraStopped: 'Камера остановлена',
+                statusImageLoaded: 'Изображение загружено и распознано',
+                statusBatchLoaded: 'Изображения загружены. Распознавание завершено.',
+                statusRecognitionStopped: 'Распознавание остановлено',
+                statusResultsExported: 'Результаты экспортированы',
+                statusResultsCleared: 'Результаты очищены',
+                placeholderImage: 'Загрузите изображение или подключите камеру',
+                placeholderCameraStopped: 'Камера остановлена',
+                recognitionResults: 'Результаты распознавания',
+                radialIndex: 'Радиальный индекс (n):',
+                azimuthalIndex: 'Азимутальный индекс (m):',
+                topologicalCharge: 'Топологический заряд (TC):',
+                recognitionHistory: 'История распознавания',
+                tableImage: 'Изображение',
+                tableN: 'n',
+                tableM: 'm',
+                tableTC: 'TC'
+            },
+            zh: {
+                loadModel: '加载模型',
+                connectCamera: '连接摄像头',
+                stopCamera: '停止摄像头',
+                loadImage: '加载图像',
+                batchLoad: '批量加载',
+                stopRecognition: '停止识别',
+                showTable: '显示表格',
+                exportCSV: '导出CSV',
+                clearResults: '清除结果',
+                statusLoadModel: '加载模型以开始工作',
+                statusModelLoaded: '模型加载成功',
+                statusError: '错误: ',
+                statusCameraStarted: '摄像头已启动。识别激活。',
+                statusCameraStopped: '摄像头已停止',
+                statusImageLoaded: '图像已加载并识别',
+                statusBatchLoaded: '图像已加载。识别完成。',
+                statusRecognitionStopped: '识别已停止',
+                statusResultsExported: '结果已导出',
+                statusResultsCleared: '结果已清除',
+                placeholderImage: '加载图像或连接摄像头',
+                placeholderCameraStopped: '摄像头已停止',
+                recognitionResults: '识别结果',
+                radialIndex: '径向指数 (n):',
+                azimuthalIndex: '方位角指数 (m):',
+                topologicalCharge: '拓扑荷 (TC):',
+                recognitionHistory: '识别历史',
+                tableImage: '图像',
+                tableN: 'n',
+                tableM: 'm',
+                tableTC: 'TC'
+            },
+            ja: {
+                loadModel: 'モデルをロード',
+                connectCamera: 'カメラを接続',
+                stopCamera: 'カメラを停止',
+                loadImage: '画像をロード',
+                batchLoad: 'バッチロード',
+                stopRecognition: '認識を停止',
+                showTable: 'テーブルを表示',
+                exportCSV: 'CSVエクスポート',
+                clearResults: '結果をクリア',
+                statusLoadModel: '開始するにはモデルをロードしてください',
+                statusModelLoaded: 'モデルが正常にロードされました',
+                statusError: 'エラー: ',
+                statusCameraStarted: 'カメラが起動しました。認識がアクティブです。',
+                statusCameraStopped: 'カメラが停止しました',
+                statusImageLoaded: '画像がロードされ、認識されました',
+                statusBatchLoaded: '画像がロードされました。認識が完了しました。',
+                statusRecognitionStopped: '認識が停止しました',
+                statusResultsExported: '結果がエクスポートされました',
+                statusResultsCleared: '結果がクリアされました',
+                placeholderImage: '画像をロードするかカメラを接続してください',
+                placeholderCameraStopped: 'カメラが停止しました',
+                recognitionResults: '認識結果',
+                radialIndex: '半径インデックス (n):',
+                azimuthalIndex: '方位角インデックス (m):',
+                topologicalCharge: 'トポロジカル電荷 (TC):',
+                recognitionHistory: '認識履歴',
+                tableImage: '画像',
+                tableN: 'n',
+                tableM: 'm',
+                tableTC: 'TC'
+            }
+        };
+
+        // Функция переключения языка
+        function setLanguage(lang) {
+            currentLanguage = lang;
+            const t = translations[lang];
+
+            // Обновление текстовых элементов
+            document.querySelector('label[for="modelFile"]').textContent = t.loadModel;
+            document.getElementById('cameraBtn').textContent = cameraRunning ? t.stopCamera : t.connectCamera;
+            document.querySelector('label[for="imageFile"]').textContent = t.loadImage;
+            document.querySelector('label[for="multipleFiles"]').textContent = t.batchLoad;
+            document.getElementById('stopRecognitionBtn').textContent = t.stopRecognition;
+            document.getElementById('showTableBtn').textContent = t.showTable;
+            document.getElementById('exportBtn').textContent = t.exportCSV;
+            document.getElementById('clearBtn').textContent = t.clearResults;
+
+            // Обновление статуса (если не содержит специфического сообщения)
+            const statusEl = document.getElementById('statusMessage');
+            const currentStatus = statusEl.textContent;
+            if (currentStatus === translations['ru'].statusLoadModel ||
+                currentStatus === translations['en'].statusLoadModel ||
+                currentStatus === translations['zh'].statusLoadModel) {
+                statusEl.textContent = t.statusLoadModel;
+            }
+
+            // Обновление placeholder
+            const imageFrame = document.getElementById('imageFrame');
+            if (imageFrame.querySelector('.image-placeholder')) {
+                imageFrame.querySelector('.image-placeholder').textContent = t.placeholderImage;
+            }
+
+            // Обновление заголовков по ID
+            document.getElementById('paramsTitle').textContent = t.recognitionResults;
+            document.getElementById('radialLabel').textContent = t.radialIndex;
+            document.getElementById('azimuthalLabel').textContent = t.azimuthalIndex;
+            document.getElementById('topologicalLabel').textContent = t.topologicalCharge;
+            document.getElementById('historyTitle').textContent = t.recognitionHistory;
+
+            // Обновление заголовков таблицы по ID
+            document.getElementById('tableHeaderImage').textContent = t.tableImage;
+            document.getElementById('tableHeaderN').textContent = t.tableN;
+            document.getElementById('tableHeaderM').textContent = t.tableM;
+            document.getElementById('tableHeaderTC').textContent = t.tableTC;
+        }
+
+        // Обновление статуса с учетом языка
+        function setStatus(message) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+        }
+
+        // Загрузка модели
+        document.getElementById('modelFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const formData = new FormData();
+                formData.append('model_file', file);
+
+                fetch('/load_model', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        setStatus(translations[currentLanguage].statusModelLoaded);
+                        enableButtons();
+                    } else {
+                        setStatus(translations[currentLanguage].statusError + data.message);
+                    }
+                });
+            }
+        });
+
+        // Переключение камеры
+        function toggleCamera() {
+            if (cameraRunning) {
+                stopCamera();
+            } else {
+                startCamera();
+            }
+        }
+
+        function startCamera() {
+            fetch('/start_camera', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    cameraRunning = true;
+                    recognitionActive = true;
+                    document.getElementById('cameraBtn').textContent = translations[currentLanguage].stopCamera;
+                    document.getElementById('stopRecognitionBtn').disabled = false;
+                    
+                    // Отображение видео
+                    const imageFrame = document.getElementById('imageFrame');
+                    imageFrame.innerHTML = '<img src="/camera_feed" alt="Camera">';
+                    
+                    setStatus(translations[currentLanguage].statusCameraStarted);
+                    
+                    // Периодическое обновление результатов
+                    startResultPolling();
+                } else {
+                    setStatus(translations[currentLanguage].statusError + data.message);
+                }
+            });
+        }
+
+        function stopCamera() {
+            fetch('/stop_camera', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    cameraRunning = false;
+                    recognitionActive = false;
+                    document.getElementById('cameraBtn').textContent = translations[currentLanguage].connectCamera;
+                    document.getElementById('stopRecognitionBtn').disabled = true;
+                    
+                    const imageFrame = document.getElementById('imageFrame');
+                    imageFrame.innerHTML = '<div class="image-placeholder">' + translations[currentLanguage].placeholderCameraStopped + '</div>';
+                    
+                    setStatus(translations[currentLanguage].statusCameraStopped);
+                }
+            });
+        }
+
+        // Загрузка одного изображения
+        function uploadSingleImage() {
+            const file = document.getElementById('imageFile').files[0];
+            if (file) {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                fetch('/upload_image', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Отображение изображения
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const imageFrame = document.getElementById('imageFrame');
+                            imageFrame.innerHTML = '<img src="' + e.target.result + '" alt="Loaded image">';
+                        };
+                        reader.readAsDataURL(file);
+                        
+                        // Отображение результатов
+                        displayResult(data.result);
+                        setStatus(translations[currentLanguage].statusImageLoaded);
+                    } else {
+                        setStatus(translations[currentLanguage].statusError + data.message);
+                    }
+                });
+            }
+        }
+
+        // Загрузка нескольких изображений
+        function uploadMultipleImages() {
+            const files = document.getElementById('multipleFiles').files;
+            if (files.length > 0) {
+                const formData = new FormData();
+                for (let file of files) {
+                    formData.append('files', file);
+                }
+
+                fetch('/upload_images', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const countMsg = currentLanguage === 'en' ? `${data.count} images loaded. Recognition complete.` :
+                                         currentLanguage === 'zh' ? `已加载 ${data.count} 张图像。识别完成。` :
+                                         `Загружено ${data.count} изображений. Распознавание завершено.`;
+                        setStatus(countMsg);
+                        showResults();
+                    } else {
+                        setStatus(translations[currentLanguage].statusError + data.message);
+                    }
+                });
+            }
+        }
+
+        // Остановка распознавания
+        function stopRecognition() {
+            fetch('/stop_recognition', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    recognitionActive = false;
+                    document.getElementById('stopRecognitionBtn').disabled = true;
+                    setStatus(translations[currentLanguage].statusRecognitionStopped);
+                }
+            });
+        }
+
+        // Отображение результата
+        function displayResult(result) {
+            document.getElementById('nValue').textContent = result.n;
+            document.getElementById('mValue').textContent = result.m;
+            document.getElementById('tcValue').textContent = result.TC;
+        }
+
+        // Показать таблицу результатов
+        function showResults() {
+            fetch('/get_results')
+            .then(response => response.json())
+            .then(data => {
+                results = data.results;
+                const tableBody = document.getElementById('resultsTable');
+                tableBody.innerHTML = '';
+
+                results.forEach(result => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${result.filename}</td>
+                        <td>${result.n}</td>
+                        <td>${result.m}</td>
+                        <td>${result.TC}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+                document.getElementById('tableContainer').style.display = 'block';
+
+                // Обновить заголовки таблицы на текущем языке
+                const t = translations[currentLanguage];
+                document.getElementById('tableHeaderImage').textContent = t.tableImage;
+                document.getElementById('tableHeaderN').textContent = t.tableN;
+                document.getElementById('tableHeaderM').textContent = t.tableM;
+                document.getElementById('tableHeaderTC').textContent = t.tableTC;
+            });
+        }
+
+        // Экспорт результатов
+        function exportResults() {
+            fetch('/export_results', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ language: currentLanguage })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const blob = new Blob([data.csv], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'vortex_recognition_results.csv';
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    setStatus(translations[currentLanguage].statusResultsExported);
+                } else {
+                    setStatus(translations[currentLanguage].statusError + data.message);
+                }
+            });
+        }
+
+        // Очистка результатов
+        function clearResults() {
+            fetch('/clear_results', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    results = [];
+                    document.getElementById('resultsTable').innerHTML = '';
+                    document.getElementById('tableContainer').style.display = 'none';
+                    document.getElementById('nValue').textContent = '-';
+                    document.getElementById('mValue').textContent = '-';
+                    document.getElementById('tcValue').textContent = '-';
+                    setStatus(translations[currentLanguage].statusResultsCleared);
+                }
+            });
+        }
+
+        // Периодическое обновление результатов
+        function startResultPolling() {
+            const pollInterval = setInterval(() => {
+                if (!recognitionActive) {
+                    clearInterval(pollInterval);
+                    return;
+                }
+                
+                fetch('/get_results')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.results && data.results.length > 0) {
+                        const latestResult = data.results[data.results.length - 1];
+                        displayResult(latestResult);
+                    }
+                });
+            }, 500);
+        }
+
+        // Установка статуса
+        function setStatus(message) {
+            document.getElementById('statusMessage').textContent = message;
+        }
+
+        // Инициализация при загрузке страницы
+        window.onload = function() {
+            setLanguage('en'); // По умолчанию английский язык
+        };
+
+        // Активация кнопок
+        function enableButtons() {
+            document.getElementById('cameraBtn').disabled = false;
+        }
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('cameraBtn').disabled = true;
+            document.getElementById('stopRecognitionBtn').disabled = true;
+        });
+    </script>
+</body>
+</html>
