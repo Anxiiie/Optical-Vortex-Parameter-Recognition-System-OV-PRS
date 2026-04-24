@@ -150,4 +150,6 @@ torch.save({'model_state_dict': model.state_dict()}, 'model_state_dict.pth')
 
 ## 许可证
 
-[许可证信息]
+本项目依据 MIT 许可证 发布。
+您可以根据许可证条款自由使用、修改和分发本软件。
+完整许可内容请参阅仓库中的 [LICENSE](LICENSE) 文件。
