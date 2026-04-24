@@ -8,6 +8,8 @@ The implementation is oriented towards operation under turbulent distortions tha
 
 The software is created for a specific research task, but the solution architecture allows adaptation to other types of optical modes, different beam parameters, or different experimental conditions. If necessary, the system can be modified to user requirements: the set of recognized parameters can be changed, the model can be expanded, a new camera or data format can be integrated, and it can be trained for specific light propagation conditions.
 
+![alt text](readmeimages/en.png)
+
 ## Features
 
 - **Parameter Recognition**: Determination of radial index (n), azimuthal index (m), and topological charge (TC)

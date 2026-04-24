@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Распознаватель оптических вихрей Лагерра-Гаусса</title>
+    <title>OV-PRS</title>
     <style>
         * {
             margin: 0;
@@ -201,6 +201,7 @@
         .table-frame {
             max-height: 400px;
             overflow-y: auto;
+            padding-right: 3px;
         }
 
         table {
@@ -237,6 +238,23 @@
         .lang-btn {
             padding: 8px 16px;
             font-size: 12px;
+        }
+
+        .table-frame::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .table-frame::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .table-frame::-webkit-scrollbar-thumb {
+            background: rgba(155, 123, 155, 0.7);
+            border-radius: 6px;
+        }
+
+        .table-frame::-webkit-scrollbar-thumb:hover {
+            background: rgba(155, 123, 155, 0.9);
         }
     </style>
 </head>
@@ -357,7 +375,8 @@
                 tableImage: 'Image',
                 tableN: 'n',
                 tableM: 'm',
-                tableTC: 'TC'
+                tableTC: 'TC',
+                statusBatchLoadedCount: (count) => `${count} images loaded. Recognition complete.`
             },
             ru: {
                 loadModel: 'Загрузить модель',
@@ -389,7 +408,8 @@
                 tableImage: 'Изображение',
                 tableN: 'n',
                 tableM: 'm',
-                tableTC: 'TC'
+                tableTC: 'TC',
+                statusBatchLoadedCount: (count) => `Загружено ${count} изображений. Распознавание завершено.`
             },
             zh: {
                 loadModel: '加载模型',
@@ -421,7 +441,8 @@
                 tableImage: '图像',
                 tableN: 'n',
                 tableM: 'm',
-                tableTC: 'TC'
+                tableTC: 'TC',
+                statusBatchLoadedCount: (count) => `已加载 ${count} 张图像。识别完成。`
             },
             ja: {
                 loadModel: 'モデルをロード',
@@ -453,7 +474,8 @@
                 tableImage: '画像',
                 tableN: 'n',
                 tableM: 'm',
-                tableTC: 'TC'
+                tableTC: 'TC',
+                statusBatchLoadedCount: (count) => `${count} 枚の画像がロードされました。認識が完了しました。`
             }
         };
 
@@ -633,9 +655,9 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        const countMsg = currentLanguage === 'en' ? `${data.count} images loaded. Recognition complete.` :
-                                         currentLanguage === 'zh' ? `已加载 ${data.count} 张图像。识别完成。` :
-                                         `Загружено ${data.count} изображений. Распознавание завершено.`;
+                        const countMsg = translations[currentLanguage].statusBatchLoadedCount
+                            ? translations[currentLanguage].statusBatchLoadedCount(data.count)
+                            : `${data.count} images loaded. Recognition complete.`;
                         setStatus(countMsg);
                         showResults();
                     } else {
