@@ -152,4 +152,6 @@ If you encounter problems:
 
 ## License
 
-[License Information]
+This project is distributed under the terms of the MIT License.
+You are free to use, modify, and distribute the software in accordance with the license conditions.
+For full details, see the [LICENSE](LICENSE) file included in the repository.
