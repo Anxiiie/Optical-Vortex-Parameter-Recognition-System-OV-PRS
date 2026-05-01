@@ -343,7 +343,7 @@
         let results = [];
         let currentLanguage = 'ru';
 
-        // Переводы
+        // Translations
         const translations = {
             en: {
                 loadModel: 'Load Model',
@@ -479,12 +479,12 @@
             }
         };
 
-        // Функция переключения языка
+        // Language switching function
         function setLanguage(lang) {
             currentLanguage = lang;
             const t = translations[lang];
 
-            // Обновление текстовых элементов
+            // Updating text elements
             document.querySelector('label[for="modelFile"]').textContent = t.loadModel;
             document.getElementById('cameraBtn').textContent = cameraRunning ? t.stopCamera : t.connectCamera;
             document.querySelector('label[for="imageFile"]').textContent = t.loadImage;
@@ -494,7 +494,7 @@
             document.getElementById('exportBtn').textContent = t.exportCSV;
             document.getElementById('clearBtn').textContent = t.clearResults;
 
-            // Обновление статуса (если не содержит специфического сообщения)
+            // Status update (if it doesn't contain a specific message)
             const statusEl = document.getElementById('statusMessage');
             const currentStatus = statusEl.textContent;
             if (currentStatus === translations['ru'].statusLoadModel ||
@@ -503,33 +503,33 @@
                 statusEl.textContent = t.statusLoadModel;
             }
 
-            // Обновление placeholder
+            // Placeholder update
             const imageFrame = document.getElementById('imageFrame');
             if (imageFrame.querySelector('.image-placeholder')) {
                 imageFrame.querySelector('.image-placeholder').textContent = t.placeholderImage;
             }
 
-            // Обновление заголовков по ID
+            // Updating headers by ID
             document.getElementById('paramsTitle').textContent = t.recognitionResults;
             document.getElementById('radialLabel').textContent = t.radialIndex;
             document.getElementById('azimuthalLabel').textContent = t.azimuthalIndex;
             document.getElementById('topologicalLabel').textContent = t.topologicalCharge;
             document.getElementById('historyTitle').textContent = t.recognitionHistory;
 
-            // Обновление заголовков таблицы по ID
+            // Updating table headers by ID
             document.getElementById('tableHeaderImage').textContent = t.tableImage;
             document.getElementById('tableHeaderN').textContent = t.tableN;
             document.getElementById('tableHeaderM').textContent = t.tableM;
             document.getElementById('tableHeaderTC').textContent = t.tableTC;
         }
 
-        // Обновление статуса с учетом языка
+        // Language-aware status updates
         function setStatus(message) {
             const statusEl = document.getElementById('statusMessage');
             statusEl.textContent = message;
         }
 
-        // Загрузка модели
+        // Model upload
         document.getElementById('modelFile').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
@@ -552,7 +552,7 @@
             }
         });
 
-        // Переключение камеры
+        // Camera module
         function toggleCamera() {
             if (cameraRunning) {
                 stopCamera();
@@ -573,13 +573,13 @@
                     document.getElementById('cameraBtn').textContent = translations[currentLanguage].stopCamera;
                     document.getElementById('stopRecognitionBtn').disabled = false;
                     
-                    // Отображение видео
+                    // Displaying video
                     const imageFrame = document.getElementById('imageFrame');
                     imageFrame.innerHTML = '<img src="/camera_feed" alt="Camera">';
                     
                     setStatus(translations[currentLanguage].statusCameraStarted);
                     
-                    // Периодическое обновление результатов
+                    // Periodic results updating
                     startResultPolling();
                 } else {
                     setStatus(translations[currentLanguage].statusError + data.message);
@@ -607,7 +607,7 @@
             });
         }
 
-        // Загрузка одного изображения
+        // Uploading a single image
         function uploadSingleImage() {
             const file = document.getElementById('imageFile').files[0];
             if (file) {
@@ -621,7 +621,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Отображение изображения
+                        // Displaying an image
                         const reader = new FileReader();
                         reader.onload = function(e) {
                             const imageFrame = document.getElementById('imageFrame');
@@ -629,7 +629,7 @@
                         };
                         reader.readAsDataURL(file);
                         
-                        // Отображение результатов
+                        // Displaying results
                         displayResult(data.result);
                         setStatus(translations[currentLanguage].statusImageLoaded);
                     } else {
@@ -639,7 +639,7 @@
             }
         }
 
-        // Загрузка нескольких изображений
+        // Uploading multiple images
         function uploadMultipleImages() {
             const files = document.getElementById('multipleFiles').files;
             if (files.length > 0) {
@@ -667,7 +667,7 @@
             }
         }
 
-        // Остановка распознавания
+        // Stopping recognition
         function stopRecognition() {
             fetch('/stop_recognition', {
                 method: 'POST'
@@ -682,14 +682,14 @@
             });
         }
 
-        // Отображение результата
+        // Displaying the result
         function displayResult(result) {
             document.getElementById('nValue').textContent = result.n;
             document.getElementById('mValue').textContent = result.m;
             document.getElementById('tcValue').textContent = result.TC;
         }
 
-        // Показать таблицу результатов
+        // Show results table
         function showResults() {
             fetch('/get_results')
             .then(response => response.json())
@@ -711,7 +711,7 @@
 
                 document.getElementById('tableContainer').style.display = 'block';
 
-                // Обновить заголовки таблицы на текущем языке
+                // Update table headers in the current language
                 const t = translations[currentLanguage];
                 document.getElementById('tableHeaderImage').textContent = t.tableImage;
                 document.getElementById('tableHeaderN').textContent = t.tableN;
@@ -720,7 +720,7 @@
             });
         }
 
-        // Экспорт результатов
+        // Export results
         function exportResults() {
             fetch('/export_results', {
                 method: 'POST',
@@ -746,7 +746,7 @@
             });
         }
 
-        // Очистка результатов
+        // Clearing results
         function clearResults() {
             fetch('/clear_results', {
                 method: 'POST'
@@ -765,7 +765,7 @@
             });
         }
 
-        // Периодическое обновление результатов
+        // Periodic updating of results
         function startResultPolling() {
             const pollInterval = setInterval(() => {
                 if (!recognitionActive) {
@@ -784,22 +784,22 @@
             }, 500);
         }
 
-        // Установка статуса
+        // Setting the status
         function setStatus(message) {
             document.getElementById('statusMessage').textContent = message;
         }
 
-        // Инициализация при загрузке страницы
+        // Initialization on page load
         window.onload = function() {
-            setLanguage('en'); // По умолчанию английский язык
+            setLanguage('en'); // English by default
         };
 
-        // Активация кнопок
+        // Activating buttons
         function enableButtons() {
             document.getElementById('cameraBtn').disabled = false;
         }
 
-        // Инициализация
+        // Initialization
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('cameraBtn').disabled = true;
             document.getElementById('stopRecognitionBtn').disabled = true;
