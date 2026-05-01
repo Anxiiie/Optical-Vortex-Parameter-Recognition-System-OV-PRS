@@ -1,6 +1,6 @@
 """
-Модуль для загрузки и использования предобученных нейросетей
-для распознавания параметров оптических вихрей Лагерра-Гаусса
+Module for loading and using pre-trained neural networks for recognizing 
+the Laguerre-Gaussian optical vortices parameters
 """
 
 import torch
@@ -9,14 +9,16 @@ import numpy as np
 import os
 from PIL import Image
 
-# Количество классов для параметров
+# Number of classes for parameters
 N_CLASSES_N = 7  # n от 1 до 7
 N_CLASSES_M = 7  # m от 2 до 8
 
 class AlexNetLG(nn.Module):
     """
-    AlexNet архитектура для распознавания параметров оптических вихрей
-    Используется для загрузки state_dict обученных моделей
+    AlexNet architecture for optical vortex parameter recognition
+    Used to load the state_dict of pre-trained models (You can change to any other architecture)
+    Use only state_dict save (Recommended by PyTorch developers)
+    (Described here: http://docs.pytorch.org/tutorials/beginner/saving_loading_models.html)
     """
     def __init__(self):
         super().__init__()
@@ -65,7 +67,7 @@ class AlexNetLG(nn.Module):
 
 class VortexRecognizer:
     """
-    Класс для распознавания оптических вихрей с использованием предобученных моделей
+    Class for optical vortex recognition using pre-trained models
     """
     def __init__(self, model_path=None):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -76,27 +78,27 @@ class VortexRecognizer:
     
     def load_model(self, model_path):
         """
-        Загрузка предобученной модели из файла PyTorch
+        Upload pre-trained model from PyTorch file
         
         Args:
-            model_path: путь к файлу модели (.pth или .pt)
+            model_path: path to model file (.pth или .pt)
             
         Returns:
-            bool: True если загрузка успешна, False в противном случае
+            bool: True if upload successful, False otherwise
         """
         try:
             checkpoint = torch.load(model_path, map_location=self.device)
             
-            # Обработка разных форматов сохранения
+            # Handling different saving formats
             if isinstance(checkpoint, dict):
                 if 'model_state_dict' in checkpoint:
-                    # Загрузка state_dict в архитектуру AlexNetLG
+                    # Upload state_dict into AlexNetLG architecture
                     self.model = AlexNetLG().to(self.device)
                     self.model.load_state_dict(checkpoint['model_state_dict'])
                 elif 'model' in checkpoint:
                     self.model = checkpoint['model']
                 else:
-                    # Если это просто dict без специальных ключей, считаем это state_dict
+                    # If it's just a dict with no special keys, consider it a state_dict
                     try:
                         self.model = AlexNetLG().to(self.device)
                         self.model.load_state_dict(checkpoint)
@@ -105,10 +107,10 @@ class VortexRecognizer:
                         print("Архитектура вашей модели может отличаться от AlexNetLG.")
                         return False
             else:
-                # Загружен полный объект модели
+                # The complete model object has been loaded
                 self.model = checkpoint
             
-            # Перевод в режим оценки
+            # Switching to evaluation mode
             if hasattr(self.model, 'eval'):
                 self.model.eval()
             
@@ -120,24 +122,24 @@ class VortexRecognizer:
     
     def load_image(self, image_source):
         """
-        Загрузка изображения из файла или из массива numpy
+        Loading an image from a file or numpy array
         
         Args:
-            image_source: путь к файлу (str) или numpy array
+            image_source: path to file (str) or numpy array
             
         Returns:
-            numpy.ndarray: загруженное изображение или None при ошибке
+            numpy.ndarray: uploaded image or None on error
         """
         try:
             if isinstance(image_source, str):
-                # Загрузка из файла
+                # Upload from file
                 image = Image.open(image_source)
                 return np.array(image)
             elif isinstance(image_source, np.ndarray):
-                # Возврат массива numpy
+                # Returning a numpy array
                 return image_source
             elif isinstance(image_source, Image.Image):
-                # Конвертация PIL Image в numpy array
+                # Converting a PIL Image to a NumPy Array
                 return np.array(image_source)
             else:
                 print("Неподдерживаемый формат изображения")
@@ -148,70 +150,70 @@ class VortexRecognizer:
     
     def recognize(self, image_input):
         """
-        Распознавание параметров оптического вихря
+        Recognition of optical vortex parameters
         
         Args:
-            image_input: изображение в формате numpy array или путь к файлу
+            image_input: image in numpy array format or file path
             
         Returns:
-            dict: {'n': радиальный индекс, 'm': азимутальный индекс, 'TC': топологический заряд}
-                  или None при ошибке
+            dict: {'n': radial index, 'm': azimuthal index, 'TC': topological charge}
+                    or None on error
         """
         if self.model is None:
             print("Модель не загружена")
             return None
         
-        # Загрузка изображения
+        # Uploading an image
         image = self.load_image(image_input)
         if image is None:
             return None
         
         try:
-            # Подготовка тензора (соответствует предобработке при обучении)
+            # Tensor preparation (corresponds to preprocessing during training)
             if len(image.shape) == 2:
-                # Градации серого - конвертируем в RGB
+                # Grayscale - Convert to RGB
                 image = np.stack([image] * 3, axis=-1)
             
-            # Убедимся, что изображение в RGB формате
+            # Let's make sure the image is in RGB format
             if len(image.shape) == 3 and image.shape[2] == 3:
-                # RGB - конвертируем в формат PyTorch (C, H, W)
+                # RGB - convert to PyTorch format (C, H, W)
                 image_tensor = torch.from_numpy(image).float().permute(2, 0, 1)
             else:
                 print("Неподдерживаемый формат изображения. Ожидается RGB.")
                 return None
             
-            # Масштабирование до 227x227 (как при обучении)
+            # Scaling to 227x227 (as in training)
             from torchvision import transforms
             resize_transform = transforms.Resize((227, 227))
             image_tensor = resize_transform(image_tensor)
             
-            # Нормализация 0-1 (как transforms.ToTensor())
+            # Normalization 0-1 (like transforms.ToTensor())
             image_tensor = image_tensor / 255.0
             
-            # Добавление размерности батча
+            # Adding batch dimensions
             image_tensor = image_tensor.unsqueeze(0)
             image_tensor = image_tensor.to(self.device)
             
-            # Прямой проход через модель
+            # Direct pass through the model
             with torch.no_grad():
                 if hasattr(self.model, 'forward'):
                     output = self.model(image_tensor)
                 else:
                     output = self.model(image_tensor)
                 
-                # Обработка выхода модели
+                # Processing the model output
                 if isinstance(output, tuple) and len(output) == 2:
                     n_pred, m_pred = output
                     n_class = torch.argmax(n_pred, dim=1).item()
                     m_class = torch.argmax(m_pred, dim=1).item()
                     
-                    # Конвертация классов в реальные значения
-                    # n: классы 0-6 -> значения 1-7
+                    # Converting classes to real values
+                    # n: classes 0-6 -> values ​​1-7
                     n_value = n_class + 1
-                    # m: классы 0-6 -> значения 2-8
+                    # m: classes 0-6 -> values 2-8
                     m_value = m_class + 2
                     
-                    # Вычисление топологического заряда
+                    # Calculation of topological charge
                     tc_value = m_value - n_value
                     
                     return {
@@ -220,7 +222,7 @@ class VortexRecognizer:
                         'TC': tc_value
                     }
                 else:
-                    # Если модель возвращает другой формат
+                    # If the model returns a different format
                     print("Неподдерживаемый формат выхода модели")
                     return None
                     
@@ -230,13 +232,13 @@ class VortexRecognizer:
     
     def recognize_batch(self, image_paths):
         """
-        Пакетное распознавание изображений
+        Batch image recognition
         
         Args:
-            image_paths: список путей к изображениям
+            image_paths: list of paths to images
             
         Returns:
-            list: список результатов распознавания
+            list: list of recognition results
         """
         results = []
         for path in image_paths:
